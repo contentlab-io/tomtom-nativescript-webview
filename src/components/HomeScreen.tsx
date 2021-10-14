@@ -1,13 +1,10 @@
 import * as React from "react";
+import { useState } from "react";
 import { RouteProp } from "@react-navigation/core";
-import { Dialogs } from "@nativescript/core";
 import { FrameNavigationProp } from "react-nativescript-navigation";
 import { StyleSheet } from "react-nativescript";
 import { MainStackParamList } from "./NavigationParamList";
-import {
-  WebViewExtBase,
-  WebViewExt
-} from "@nota/nativescript-webview-ext/webview-ext";
+import { WebViewEventData } from "@nota/nativescript-webview-ext";
 
 type HomeScreenProps = {
   route: RouteProp<MainStackParamList, "Home">;
@@ -31,34 +28,85 @@ const htmlString = `
     ></div>
     <script>
       var map = tt.map({
-        key: 'IGZBF1VBk0AjcA8NnrGp9RcG1AeYDsuC',
+        key: 'YOUR_API_KEY',
         container: 'map',
         style: 'tomtom://vector/1/basic-main',
+        center: [-121.913, 37.361],
+        zoom: 15
       });
+
+      window.addEventListener("ns-bridge-ready", function(e) {
+        var nsWebViewBridge = e.detail || window.nsWebViewBridge;
+        map.on('dragend', function() {
+          let center = map.getCenter();
+          nsWebViewBridge.emit("mapCenterChanged", 
+            center.lng.toFixed(3) + ", " + center.lat.toFixed(3));
+        });
+      });
+      
+      function setCenter(lng, lat) {
+        map.setCenter([lng, lat]);
+      }
     </script>
   </body>
 </html>
-`;
+`; 
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
+  let webView = undefined;
+  let [mapCenter, setMapCenter] = useState('-121.913, 37.361');
+
+  function onButtonPress() {
+    const [lng, lat] = mapCenter.split(",");
+    webView.executeJavaScript(`setCenter(${parseFloat(lng)}, ${parseFloat(lat)});`);
+  }
+
+  const handleMapEvent = (args: WebViewEventData) => {
+    setMapCenter(args.data);
+  }
+
+  function initializeWebView(viewComponent) {
+    webView = viewComponent;
+    webView.on("mapCenterChanged", handleMapEvent);
+  }
+
   return (
-    <flexboxLayout style={styles.container}>
-      <webView src={htmlString} />
-    </flexboxLayout>
+    <stackLayout style={styles.container}>
+      <label style={styles.headingText}>TomTom NativeScript WebView</label>
+      <flexboxLayout>
+        <textField style={styles.textInput}
+                   text={mapCenter} 
+                   onTextChange={(args) =>setMapCenter(args.value)}/>
+        <button onTap={onButtonPress} text="Set Center" />
+      </flexboxLayout>
+      <webViewExt 
+        ref={(r) => { r && initializeWebView(r._nativeView);}} 
+        src={htmlString} 
+        style={styles.webView} />
+    </stackLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    height: "100%"
+    paddingTop: 50
   },
-  text: {
+  headingText: {
     textAlignment: "center",
     fontSize: 24,
-    color: "black"
+    color: "white",
+    marginBottom: 10
+  },
+  textInput: {
+    marginLeft: 10,
+    width: "60%"
   },
   button: {
     fontSize: 24,
     color: "#2e6ddf"
+  }, 
+  webView: {
+    marginTop: 10,
+    height: "80%"
   }
 });
