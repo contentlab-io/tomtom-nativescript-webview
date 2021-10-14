@@ -14,7 +14,7 @@ export const mainStackNavigator = () => (
                 headerStyle: {
                     backgroundColor: "white",
                 },
-                headerShown: true,
+                headerShown: false,
             }}
         >
             <StackNavigator.Screen

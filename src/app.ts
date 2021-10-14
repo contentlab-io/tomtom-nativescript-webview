@@ -1,4 +1,20 @@
 import * as React from 'react'
+import { registerElement, NativeScriptProps, WebViewAttributes } from "react-nativescript";
+import type { WebViewExt } from "@nota/nativescript-webview-ext";
+
+registerElement('webViewExt', () => require("@nota/nativescript-webview-ext").WebViewExt);
+
+declare global {
+    module JSX {
+        interface IntrinsicElements {
+            /**
+             * If determining the GradientAttributes is too much work,
+             * you could substitute it for `any` type!
+             */
+            webViewExt: NativeScriptProps<any, WebViewExt>,
+        }
+    }
+}
 
 /* Controls react-nativescript log verbosity. true: all logs; false: only error logs. */
 Object.defineProperty(global, '__DEV__', { value: false })
